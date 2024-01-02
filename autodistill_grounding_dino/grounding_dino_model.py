@@ -13,8 +13,7 @@ from autodistill.detection import CaptionOntology, DetectionBaseModel
 from autodistill.helpers import load_image
 from groundingdino.util.inference import Model
 
-from autodistill_grounding_dino.helpers import (combine_detections,
-                                                load_grounding_dino)
+from autodistill_grounding_dino.helpers import combine_detections, load_grounding_dino
 
 HOME = os.path.expanduser("~")
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -27,20 +26,19 @@ class GroundingDINO(DetectionBaseModel):
     box_threshold: float
     text_threshold: float
 
-    def __init__(
-        self, ontology: CaptionOntology, box_threshold=0.35, text_threshold=0.25
-    ):
-        self.ontology = ontology
+    def __init__(self, box_threshold=0.35, text_threshold=0.25):
         self.grounding_dino_model = load_grounding_dino()
         self.box_threshold = box_threshold
         self.text_threshold = text_threshold
+        self.ontology = CaptionOntology({"person": "person"})
 
-    def predict(self, input: str) -> sv.Detections:
+    def predict(self, input: str, prompts) -> sv.Detections:
         image = load_image(input, return_format="cv2")
+        ontology = CaptionOntology({v: v for v in prompts})
 
         detections_list = []
 
-        for _, description in enumerate(self.ontology.prompts()):
+        for _, description in enumerate(ontology.prompts()):
             detections = self.grounding_dino_model.predict_with_classes(
                 image=image,
                 classes=[description],
